@@ -2,6 +2,7 @@
 var starscore = require("./templates/starscore/starscore.js");
 App({
   onLaunch: function () {
+    console.log("on launch")
     var that = this;
     //  获取商城名称
     wx.request({
@@ -13,56 +14,62 @@ App({
         if (res.data.code == 0) {
           wx.setStorageSync('mallName', res.data.data.value);
         }
-      }
-    })
-    wx.request({
-      url: 'https://api.it120.cc/' + that.globalData.subDomain + '/score/send/rule',
-      data: {
-        code: 'goodReputation'
-      },
-      success: function (res) {
-        if (res.data.code == 0) {
-          that.globalData.order_reputation_score = res.data.data[0].score;
+        if(that.mallNamecallback)
+        {
+          that.mallNamecallback(res.data.data.value);
         }
       }
     })
-    wx.request({
-      url: 'https://api.it120.cc/' + that.globalData.subDomain + '/config/get-value',
-      data: {
-        key: 'recharge_amount_min'
-      },
-      success: function (res) {
-        if (res.data.code == 0) {
-          that.globalData.recharge_amount_min = res.data.data.value;
-        }
-      }
-    })
-    // 获取砍价设置
-    wx.request({
-      url: 'https://api.it120.cc/' + that.globalData.subDomain + '/shop/goods/kanjia/list',
-      data: {},
-      success: function (res) {
-        if (res.data.code == 0) {
-          that.globalData.kanjiaList = res.data.data.result;
-        }
-      }
-    })
+    
     wx.request({
       url: 'https://api.it120.cc/' + that.globalData.subDomain + '/shop/goods/category/all',
       success: function (res) {
+        console.log("categories： ",res.data.data)
         var categories = []; //{ id: 0, name: "全品类" }
         if (res.data.code == 0) {
           for (var i = 0; i < res.data.data.length; i++) {
             categories.push(res.data.data[i]);
           }
         }
+        if(that.cateCallback){
+          console.log(categories)
+          that.cateCallback(categories)
+        }
         that.globalData.categories = categories
-        that.getGoods(0);//获取全品类商品
+        // that.getGoods(0);//获取全品类商品
       },
       fail: function () {
         that.globalData.onLoadStatus = false
         wx.hideLoading()
         console.log('11')
+      }
+    });
+    wx.request({
+      url: 'https://api.it120.cc/' + that.globalData.subDomain + '/shop/goods/list',
+      data: {
+        page: that.globalData.page,
+        pageSize: that.globalData.pageSize,
+        categoryId: ''
+      },
+      success: function (res) {
+        that.globalData.goods = []
+        var goods = [];
+        if (res.data.code == 0 || res.data.data.length != 0) {
+          var temp;
+          for (var i = 0; i < res.data.data.length; i++) {
+            temp = res.data.data[i];
+            temp.minPrice = temp.minPrice.toFixed(2);
+            temp.originalPrice = temp.originalPrice.toFixed(2);
+            goods.push(temp);
+          }
+          console.log('goods----------------------')
+          console.log(goods)
+        }
+        if(that.goodsCallback)
+        {
+          console.log("temp",goods)
+          that.goodsCallback(goods);
+        }
       }
     })
   },
@@ -107,44 +114,38 @@ App({
       success: function (res) {
         that.globalData.goods = []
         var goods = [];
+        if (res.data.code == 0 || res.data.data.length != 0) {
+          var temp;
+          for (var i = 0; i < res.data.data.length; i++) {
+            temp = res.data.data[i];
+            temp.minPrice = temp.minPrice.toFixed(2);
+            temp.originalPrice = temp.originalPrice.toFixed(2);
+            goods.push(temp);
+          }
+          console.log('goods----------------------')
+          console.log(goods)
 
-        if (res.data.code != 0 || res.data.data.length == 0) {
-          /*that.setData({
-            prePageBtn: false,
-            nextPageBtn: true,
-            toBottom: true
-          });*/
-          return;
+          var goodsName = []; //获取全部商品名称，做为智能联想输入库
+          for (var i = 0; i < goods.length; i++) {
+            goodsName.push(goods[i].name);
+          }
+          that.globalData.goodsName = goodsName
+
+          var page = that.globalData.page;
+          var pageSize = that.globalData.pageSize;
+          for (let i = 0; i < goods.length; i++) {
+            goods[i].starscore = (goods[i].numberGoodReputation / goods[i].numberOrders) * 5
+            goods[i].starscore = Math.ceil(goods[i].starscore / 0.5) * 0.5
+            goods[i].starpic = starscore.picStr(goods[i].starscore)
+            
+          }
+          that.globalData.goods = goods
+          console.log('getGoodsReputation----------------------')
+          console.log(that.globalData.goods)
         }
-        var temp;
-        for (var i = 0; i < res.data.data.length; i++) {
-          temp = res.data.data[i];
-          temp.minPrice = temp.minPrice.toFixed(2);
-          temp.originalPrice = temp.originalPrice.toFixed(2);
-          goods.push(temp);
+        if(that.goodsCallback){
+          that.goodsCallback(goods)
         }
-
-
-        console.log('goods----------------------')
-        console.log(goods)
-
-        var goodsName = []; //获取全部商品名称，做为智能联想输入库
-        for (var i = 0; i < goods.length; i++) {
-          goodsName.push(goods[i].name);
-        }
-        that.globalData.goodsName = goodsName
-
-        var page = that.globalData.page;
-        var pageSize = that.globalData.pageSize;
-        for (let i = 0; i < goods.length; i++) {
-          goods[i].starscore = (goods[i].numberGoodReputation / goods[i].numberOrders) * 5
-          goods[i].starscore = Math.ceil(goods[i].starscore / 0.5) * 0.5
-          goods[i].starpic = starscore.picStr(goods[i].starscore)
-          
-        }
-        that.globalData.goods = goods
-        console.log('getGoodsReputation----------------------')
-        console.log(that.globalData.goods)
 
 
         wx.request({
@@ -204,7 +205,7 @@ App({
     })
   },
   globalData:{
-    page: 1, //初始加载商品时的页面号
+    page: 0, //初始加载商品时的页面号
     pageSize: 10000, //初始加载时的商品数，设置为10000保证小商户能加载完全部商品
     categories: [],
     goods: [],
@@ -213,13 +214,12 @@ App({
     goodsList: [],
     onLoadStatus: true,
     activeCategoryId: null,
-
-    globalBGColor: '#00afb4',
+    globalBGColor: '#fffbf0',
     bgRed: 0,
     bgGreen: 175,
     bgBlue: 180,
     userInfo: null,
-    subDomain: "tggtest",// 商城后台个性域名tgg
+    subDomain: "ADEshop",// 商城后台个性域名tgg
     version: "2.0.6",
     shareProfile: '   一流的服务，做超新鲜的水果' // 首页转发的时候术语
   }

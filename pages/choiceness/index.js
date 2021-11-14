@@ -4,6 +4,7 @@ var starscore = require("../../templates/starscore/starscore.js");
 var app = getApp();
 Page({
   data: {
+    remind: '加载中',
     indicatorDots: true,
     autoplay: true,
     interval: 3500,
@@ -12,7 +13,6 @@ Page({
     isEnd: false, //到底啦
     userInfo: {},
     swiperCurrent: 0,
-    recommendTitlePicStr: '',
     categories: [],
     activeCategoryId: 0,
     goodsList: [], //按类别的商品
@@ -27,9 +27,15 @@ Page({
       windowWidth: 0,
       windowHeight: 0,
     },
-    height: []
+    height: [],
+    categories:[] ,//产品分类,
+    imgInFirst:"",
+    showHotCate:[],
+    allgoods:[],
+    hotGoodsMap:{}
   },
   onLoad: function () {
+    console.log("on load")
     var that = this
     that.setData({
       goodsList: app.globalData.goodsList,
@@ -39,16 +45,47 @@ Page({
       background_color: app.globalData.globalBGColor,
       bgRed: app.globalData.bgRed,
       bgGreen: app.globalData.bgGreen,
-      bgBlue: app.globalData.bgBlue
+      bgBlue: app.globalData.bgBlue,
+      categories:app.globalData.categories,
+      showCategories:[],
+      showRecommendedCate:null,
+      imgInFirst:"",
+      allgoods:app.globalData.goods
     })
-    that.getRecommendTitlePicStr();
+    console.log("data in global: ", app.globalData.goods);
+    if(app.globalData.goods && app.globalData.goods.length!=0)
+    {
+      console.log("not in call back")
+      that.setData({
+        all: app.globalData.goods,
+      })
+      console.log("aaaagoods: ",that.data.allgoods);
+    }
+    else{
+      console.log("in call back", app.globalData.goods)
+      app.goodsCallback = goods => {
+        console.log(goods)
+        if(goods.length!=0) {
+          that.setData({
+            allgoods:goods
+          });
+          that.getRecommendCate();
+          console.log("goods in call back : ",that.data.allgoods)
+        }
+      }
+    }
+    console.log("aaaagoods: ",that.data.goods);
     wx.setNavigationBarTitle({
-      title: '果果精选',
+      title: '首页',
     })
+    
     that.getBanners();
     that.getNotice();
     that.getAppRecommendGoodsList()
-    that.getRGshow()
+    that.getRGshow();
+     
+
+    that.getFirstPicStr();
     try {
       var res = wx.getSystemInfoSync()
       console.log('system information', res)
@@ -71,13 +108,34 @@ Page({
       }
 
     } catch (e) {
-
     }
     console.log('stv', that.data.stv, that.data.height)
   },
+  getHotGoods: function() {
+    var that = this;
+    let hotGoodsMap = new Map();
+    console.log(that.data.allgoods);
+    that.data.showHotCate.forEach(cate => {
+      var ahotCate = that.data.allgoods.filter(good => good.categoryId == cate.id);
+      hotGoodsMap[cate.id] = ahotCate;
+    })
+    that.setData({
+      hotGoodsMap:hotGoodsMap
+    })
+    console.log(hotGoodsMap);
+    
+  },
   onShow: function () {
     var that = this
-
+   
+  },
+  onReady: function(){
+    var that = this;
+    setTimeout(function(){
+      that.setData({
+        remind: ''
+      });
+    }, 4000);
   },
   onPullDownRefresh: function () {
     var that = this
@@ -126,22 +184,55 @@ Page({
       })
     }
   },
-  getRecommendTitlePicStr: function () {
+  getRecommendCate: function() {
+    var that = this;
+    if(app.globalData.categories && app.globalData.categories.length!=0)
+    {
+      console.log("not in call back")
+      that.setData({
+        categories: app.globalData.categories,
+      })
+      console.log("aaaagoods: ",that.data.categories);
+    }
+    else{
+      console.log("in call back", app.globalData.categories)
+      app.cateCallback = cates => {
+        console.log(cates)
+        if(cates.length!=0) {
+          let temp1 = [];
+          let temp2 = [];
+          cates.filter(cate=> cate.type != "hot").forEach(element => {
+            temp1.push(element);
+          });
+          cates.filter(cate =>cate.type =="hot").forEach(ele =>{
+            temp2.push(ele);
+          })
+          that.setData({
+            showCategories: temp1,
+            showHotCate: temp2,
+            categories:cates
+          })
+          that.getHotGoods();
+          console.log("showcate: ",that.data.showCategories)
+          console.log("cates in call back : ",that.data.categories)
+        }
+      }
+    }
+  },
+  
+  getFirstPicStr: function () {
     var that = this;
     //  获取商城名称
     wx.request({
       url: 'https://api.it120.cc/' + app.globalData.subDomain + '/config/get-value',
       data: {
-        key: 'finderRecommendTtile'
+        key: 'imgForAd'
       },
       success: function (res) {
         if (res.data.code == 0) {
           that.setData({
-            recommendTitlePicStr: res.data.data.value
+            imgInFirst: res.data.data.value
           })
-          console.log('recommendTitlePicStr------------------')
-          console.log(res.data.data.value)
-          console.log('ok')
         }
       },
       fail: function () {

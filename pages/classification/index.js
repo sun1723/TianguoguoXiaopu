@@ -7,7 +7,7 @@ Page(Object.assign({},{
     indicatorDots: true,
     loadingStatus: false, // loading
     loadingFinish: false,
-    shopLogo: 'https://cdn.it120.cc/apifactory/2018/06/10/527a0d6e3b3f1ffc32748193d743da26.jpg',
+    shopLogo: 'https://cdn-au.it120.cc/apifactory/2018/06/10/527a0d6e3b3f1ffc32748193d743da26.jpg',
     shopPrompt: [],
     shopDelivery: [],
     swiperCurrent: 0,
@@ -34,9 +34,8 @@ Page(Object.assign({},{
     wx.hideNavigationBarLoading() //完成停止加载
     wx.stopPullDownRefresh() //停止下拉刷新
   },
-  onLoad: function (options) {
+  onLoad: function () {
     var that = this
-    
     wx.setNavigationBarTitle({
       title: wx.getStorageSync('mallName')
     })
@@ -51,6 +50,7 @@ Page(Object.assign({},{
       bgGreen: app.globalData.bgGreen,
       bgBlue: app.globalData.bgBlue
     })
+    console.log("goodList: ",this.data.goodsList)
     for (var i = 0; i < that.data.categories.length; i++) {
       if (that.data.activeCategoryId === that.data.categories[i].id) {
         that.setData({

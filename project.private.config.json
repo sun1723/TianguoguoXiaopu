@@ -1,0 +1,42 @@
+{
+  "setting": {},
+  "condition": {
+    "plugin": {
+      "list": []
+    },
+    "game": {
+      "list": []
+    },
+    "gamePlugin": {
+      "list": []
+    },
+    "miniprogram": {
+      "list": [
+        {
+          "id": -1,
+          "name": "首页",
+          "pathName": "pages/choiceness/index",
+          "query": ""
+        },
+        {
+          "id": -1,
+          "name": "全部分类",
+          "pathName": "pages/classification/index",
+          "query": ""
+        },
+        {
+          "id": -1,
+          "name": "我的",
+          "pathName": "pages/ucenter/index/index",
+          "query": ""
+        },
+        {
+          "id": -1,
+          "name": "我的订单",
+          "pathName": "pages/shop-cart/index",
+          "query": ""
+        }
+      ]
+    }
+  }
+}
